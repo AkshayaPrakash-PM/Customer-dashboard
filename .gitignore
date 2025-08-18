@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.streamlit/
+.env
+.env.local
+.DS_Store
+# Keep data folder but ignore large outputs
+!data/
+data/processed/

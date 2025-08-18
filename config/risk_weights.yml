@@ -1,0 +1,14 @@
+weights:
+  critical: 3
+  high: 2
+  medium: 1
+  sla_breach_30d: 2
+  neg_ocv_30d: 1
+segment_multiplier:
+  S500: 2.0
+  Major: 1.2
+  Govt: 1.0
+  SMB: 1.0
+window_days:
+  risk_recent: 30
+  default_view: 90
