@@ -1,0 +1,16 @@
+ICM_ID,TenantID,Date,Complaint,Severity,Status,PriorityScore,SLA_Breach,Product
+ICM001,T001,2024-06-10,Teams call quality degraded,High,Open,8,True,Microsoft Teams
+ICM002,T001,2024-07-05,OneDrive sync failing for multiple users,Critical,Open,10,True,OneDrive
+ICM003,T002,2024-06-28,Email delays in Exchange Online,Medium,Closed,5,False,Exchange Online
+ICM004,T003,2024-07-12,Intune policy deployment issues,High,Open,8,True,Intune
+ICM005,T004,2024-06-22,Defender alerts not triggering,Critical,Closed,10,False,Defender for Endpoint
+ICM006,T005,2024-07-03,Entra ID authentication failures,Medium,Open,6,False,Entra ID
+ICM007,T006,2024-06-15,Azure SQL connection timeouts,Critical,Open,10,True,Azure SQL Database
+ICM008,T007,2024-07-18,AVD session disconnections,High,Open,8,True,Azure Virtual Desktop
+ICM009,T008,2024-07-01,SharePoint site access denied,Medium,Closed,5,False,SharePoint Online
+ICM010,T009,2024-06-25,Power BI report refresh failures,High,Open,8,True,Power BI
+ICM011,T010,2024-07-10,Teams external guest access broken,Medium,Open,6,False,Microsoft Teams
+ICM012,T001,2024-07-22,OneDrive storage quota exceeded,Low,Closed,3,False,OneDrive
+ICM013,T003,2024-06-08,Exchange mailbox corruption,Critical,Closed,10,True,Exchange Online
+ICM014,T006,2024-07-14,Intune certificate distribution failed,High,Open,8,True,Intune
+ICM015,T009,2024-07-28,Defender threat protection disabled,Critical,Open,10,True,Defender for Endpoint

@@ -33,8 +33,17 @@ def extract_themes(df: pd.DataFrame, text_col: str, group_cols: list[str] | None
 def _themes_for_group(texts: pd.Series, top_n: int) -> pd.DataFrame:
     if len(texts) == 0:
         return pd.DataFrame({"term": [], "score": []})
-    vec = TfidfVectorizer(stop_words="english", ngram_range=(1, 2), min_df=2)
-    X = vec.fit_transform(texts.tolist())
+    
+    # Handle small datasets by adjusting min_df
+    min_df = min(2, max(1, len(texts) // 3))
+    try:
+        vec = TfidfVectorizer(stop_words="english", ngram_range=(1, 2), min_df=min_df)
+        X = vec.fit_transform(texts.tolist())
+    except ValueError:
+        # If still no terms remain, try with min_df=1
+        vec = TfidfVectorizer(stop_words="english", ngram_range=(1, 2), min_df=1)
+        X = vec.fit_transform(texts.tolist())
+    
     scores = X.sum(axis=0).A1
     terms = vec.get_feature_names_out()
     order = scores.argsort()[::-1][:top_n]

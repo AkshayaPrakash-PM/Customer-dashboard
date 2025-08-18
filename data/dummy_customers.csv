@@ -1,0 +1,11 @@
+TenantID,Name,CSAM,SalesSegment,Licenses
+T001,Contoso Corp,John Smith,S500,10000
+T002,Fabrikam Inc,Jane Doe,Major,5000
+T003,Adventure Works,Bob Johnson,S500,8000
+T004,Wide World Importers,Alice Brown,SMB,1000
+T005,Northwind Traders,Charlie Wilson,Govt,3000
+T006,Tailspin Toys,Diana Lee,S500,12000
+T007,Blue Yonder Airlines,Eric Davis,Major,6000
+T008,Fourth Coffee,Grace Chen,SMB,800
+T009,Coho Winery,Henry Miller,S500,15000
+T010,Litware Inc,Isabel Garcia,Major,7000

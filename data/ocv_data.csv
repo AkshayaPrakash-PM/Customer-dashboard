@@ -1,0 +1,16 @@
+OCV_ID,TenantID,Date,Product,OCV_Type,Outcome,Comment,MetricName,MetricValue,MetricUnit,CSAM,SalesSegment
+OCV001,T001,2024-06-15,Microsoft Teams,Survey,Positive,Great collaboration features,ActiveUsers,85.5,%,John Smith,S500
+OCV002,T001,2024-07-01,OneDrive,Feedback,Negative,Sync issues with large files,SyncSuccess,72.3,%,John Smith,S500
+OCV003,T002,2024-06-20,Exchange Online,Survey,Positive,Email delivery is reliable,DeliverySuccess,98.1,%,Jane Doe,Major
+OCV004,T003,2024-07-10,Intune,Feedback,Negative,Device compliance reporting unclear,CompliantDevices,67.8,%,Bob Johnson,S500
+OCV005,T004,2024-06-25,Defender for Endpoint,Survey,Neutral,Security alerts are helpful,IncidentReduction,89.2,%,Alice Brown,SMB
+OCV006,T005,2024-07-05,Entra ID,Feedback,Positive,SSO works well for most apps,SSO_Coverage,91.7,%,Charlie Wilson,Govt
+OCV007,T006,2024-06-30,Azure SQL Database,Survey,Negative,Performance issues during peak hours,DTU_Utilization,95.3,%,Diana Lee,S500
+OCV008,T007,2024-07-15,Azure Virtual Desktop,Feedback,Positive,Remote work sessions are stable,SessionStability,94.6,%,Eric Davis,Major
+OCV009,T008,2024-07-02,SharePoint Online,Survey,Positive,Easy to set up team sites,SitesAdopted,45,count,Grace Chen,SMB
+OCV010,T009,2024-06-18,Power BI,Feedback,Negative,Dashboard loading times are slow,ActiveConsumers,120,count,Henry Miller,S500
+OCV011,T010,2024-07-08,Microsoft Teams,Survey,Positive,Video quality has improved,ActiveUsers,92.1,%,Isabel Garcia,Major
+OCV012,T001,2024-07-20,Microsoft Teams,Feedback,Negative,Meeting recordings fail occasionally,ActiveUsers,83.2,%,John Smith,S500
+OCV013,T003,2024-06-12,OneDrive,Survey,Positive,File sharing is convenient,SyncSuccess,88.7,%,Bob Johnson,S500
+OCV014,T006,2024-07-12,Exchange Online,Feedback,Negative,Spam filtering needs improvement,DeliverySuccess,96.4,%,Diana Lee,S500
+OCV015,T009,2024-07-25,Intune,Survey,Positive,Mobile device management is effective,CompliantDevices,91.3,%,Henry Miller,S500

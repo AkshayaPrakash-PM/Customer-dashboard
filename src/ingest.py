@@ -101,10 +101,19 @@ def load_data(data_dir: str = "data", aliases_path: str = "config/product_aliase
         icm["icm_sentiment_label"] = np.where(icm["is_open"], "Negative", "Neutral")
 
     # Join customers
-    for df in (ocv, icm):
-        if "TenantID" in df.columns:
-            df.merge(cust[["TenantID", "Name", "SalesSegment", "Licenses"]], on="TenantID", how="left")
-    # Return frames and customers (caller can merge as needed)
+    if "TenantID" in ocv.columns:
+        # Drop existing SalesSegment if it exists to avoid conflicts
+        ocv_cols_to_drop = [col for col in ocv.columns if col in ["Name", "SalesSegment", "Licenses"]]
+        if ocv_cols_to_drop:
+            ocv = ocv.drop(columns=ocv_cols_to_drop)
+        ocv = ocv.merge(cust[["TenantID", "Name", "SalesSegment", "Licenses"]], on="TenantID", how="left")
+    if "TenantID" in icm.columns:
+        # Drop existing SalesSegment if it exists to avoid conflicts
+        icm_cols_to_drop = [col for col in icm.columns if col in ["Name", "SalesSegment", "Licenses"]]
+        if icm_cols_to_drop:
+            icm = icm.drop(columns=icm_cols_to_drop)
+        icm = icm.merge(cust[["TenantID", "Name", "SalesSegment", "Licenses"]], on="TenantID", how="left")
+    
     return ocv, icm, cust
 
 
