@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+.env
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/cache/
+.streamlit/secrets.toml
+
+# VSCode / IDEs
+.vscode/
+.idea/
