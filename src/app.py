@@ -3,6 +3,12 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta
+import sys
+import os
+
+# Add the current directory to the path so we can import our modules
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__ + "/..")))
+
 from src.ingest import load_data, get_kpi_maps
 from src.transform import compute_risk, compute_icm_aggregates, compute_ocv_sentiment, kpi_mapping, kpi_trend, load_risk_config
 from src.themes import extract_themes
