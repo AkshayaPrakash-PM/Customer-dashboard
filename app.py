@@ -32,7 +32,7 @@ def guess_mapping(df):
 
 @st.cache_data
 def load_sample(n=200):
-    start = date.today() - pd.Timedelta(days=180)
+    start = pd.Timestamp.today() - pd.Timedelta(days=180)
     segments = ["Enterprise", "Mid‑market", "SMB"]
     regions = ["North", "South", "East", "West"]
     data = []
@@ -42,7 +42,7 @@ def load_sample(n=200):
             "segment": np.random.choice(segments),
             "region": np.random.choice(regions),
             "revenue": float(np.random.gamma(4, 250)),
-            "date": (start + pd.Timedelta(days=int(np.random.randint(0, 180)))).date()
+            "date": start + pd.Timedelta(days=int(np.random.randint(0, 180)))
         })
     df = pd.DataFrame(data)
     df["date"] = pd.to_datetime(df["date"])  # normalize to pandas datetime
