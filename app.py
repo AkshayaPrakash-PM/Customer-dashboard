@@ -211,10 +211,342 @@ if all_files_valid and not use_sample:
 if use_sample:
     df = customers_df  # This maintains compatibility with existing dashboard code
 elif all_files_valid:
-    # Placeholder for future implementation - show success message
-    st.success("🎉 All three CSV files uploaded successfully!")
-    st.info("📈 Dashboard functionality for the three-CSV data structure will be implemented in the next milestone.")
-    st.write("**Next steps:** Data joining on TenantID, risk scoring, and dashboard views will be added.")
+    # Implement the dashboard functionality with the uploaded CSV data
+    # Join the data on TenantID and create dashboard views
+    
+    # Data preparation and joining
+    @st.cache_data
+    def prepare_dashboard_data(customers_df, icms_df, ocv_df):
+        """Join and prepare data for dashboard views"""
+        # Ensure TenantID is string type for consistent joining
+        customers_df['TenantID'] = customers_df['TenantID'].astype(str)
+        icms_df['TenantID'] = icms_df['TenantID'].astype(str)
+        ocv_df['TenantID'] = ocv_df['TenantID'].astype(str)
+        
+        # Convert date columns
+        if 'CreatedAt' in icms_df.columns:
+            icms_df['CreatedAt'] = pd.to_datetime(icms_df['CreatedAt'], errors='coerce')
+        if 'Date' in ocv_df.columns:
+            ocv_df['Date'] = pd.to_datetime(ocv_df['Date'], errors='coerce')
+            
+        return customers_df, icms_df, ocv_df
+    
+    customers_df, icms_df, ocv_df = prepare_dashboard_data(customers_df, icms_df, ocv_df)
+    
+    # Create tabs for the two dashboard views
+    tab1, tab2 = st.tabs(["🎯 Director/Customer Deep-Dive", "📊 Product Manager Overview"])
+    
+    with tab1:
+        st.header("Director/Customer Deep-Dive Dashboard")
+        st.caption("Focus on S500 customers and deep customer insights")
+        
+        # Customer selection with S500 focus
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            # Filter for S500 customers by default
+            s500_customers = customers_df[customers_df['SalesSegment'] == 'S500']['TenantName'].tolist()
+            all_customers = customers_df['TenantName'].tolist()
+            
+            default_customers = s500_customers if s500_customers else all_customers[:5]
+            selected_customer = st.selectbox(
+                "Select Customer (S500 customers shown first)",
+                options=s500_customers + [c for c in all_customers if c not in s500_customers],
+                index=0 if s500_customers else 0
+            )
+        
+        with col2:
+            segment_filter = st.selectbox("Filter by Segment", 
+                                        options=['All'] + list(customers_df['SalesSegment'].unique()),
+                                        index=0)
+        
+        # Get selected customer data
+        if selected_customer:
+            customer_data = customers_df[customers_df['TenantName'] == selected_customer].iloc[0]
+            tenant_id = customer_data['TenantID']
+            
+            # Customer Profile Section
+            st.subheader(f"📋 Customer Profile: {selected_customer}")
+            
+            profile_col1, profile_col2, profile_col3, profile_col4 = st.columns(4)
+            with profile_col1:
+                st.metric("Segment", customer_data['SalesSegment'])
+                st.metric("TenantID", tenant_id)
+            with profile_col2:
+                st.metric("Licenses", f"{customer_data['Licenses']:,}")
+                if 'Region' in customer_data:
+                    st.metric("Region", customer_data['Region'])
+            with profile_col3:
+                st.metric("Products in Use", len(customer_data['ProductsInUse'].split(',')))
+                if 'M365_MAU' in customer_data:
+                    st.metric("M365 MAU", f"{customer_data['M365_MAU']:,}")
+            with profile_col4:
+                # Calculate key metrics
+                customer_icms = icms_df[icms_df['TenantID'] == tenant_id]
+                open_cases = len(customer_icms[customer_icms['Status'] == 'Open'])
+                sla_breaches = len(customer_icms[customer_icms['SLA_Breached'] == True])
+                st.metric("Open Cases", open_cases)
+                st.metric("SLA Breaches", sla_breaches)
+            
+            # Products in Use
+            st.write("**Products in Use:**", customer_data['ProductsInUse'])
+            
+            # ICMs and Issues Section
+            st.subheader("🎫 Issues & Support Cases")
+            
+            if not customer_icms.empty:
+                # ICM Summary
+                icm_col1, icm_col2, icm_col3 = st.columns(3)
+                with icm_col1:
+                    critical_high = len(customer_icms[customer_icms['Severity'].isin(['Critical', 'High'])])
+                    st.metric("Critical/High Severity", critical_high, 
+                             help="Number of critical and high severity issues")
+                with icm_col2:
+                    avg_priority = customer_icms['PriorityScore'].mean()
+                    st.metric("Avg Priority Score", f"{avg_priority:.1f}",
+                             help="Average priority score across all issues")
+                with icm_col3:
+                    urgent_issues = len(customer_icms[(customer_icms['SLA_Breached'] == True) | 
+                                                    (customer_icms['PriorityScore'] > 80)])
+                    st.metric("Urgent Issues", urgent_issues,
+                             help="SLA breached or priority score > 80")
+                
+                # Top Issues Table
+                st.write("**Recent Issues:**")
+                issues_display = customer_icms.sort_values('PriorityScore', ascending=False)[
+                    ['Product', 'Severity', 'Status', 'CreatedAt', 'SLA_Breached', 'PriorityScore']
+                ].head(10)
+                st.dataframe(issues_display, use_container_width=True, hide_index=True)
+                
+                # Top 3 Pain Points
+                if len(customer_icms) >= 3:
+                    st.write("**🔥 Top 3 Pain Points:**")
+                    top_issues = customer_icms.nlargest(3, 'PriorityScore')
+                    for i, (_, issue) in enumerate(top_issues.iterrows(), 1):
+                        severity_color = {"Critical": "🔴", "High": "🟠", "Medium": "🟡", "Low": "🟢"}
+                        st.write(f"{i}. {severity_color.get(issue['Severity'], '⚪')} **{issue['Product']}** - {issue['Severity']} severity (Priority: {issue['PriorityScore']})")
+            else:
+                st.info("No support cases found for this customer.")
+            
+            # OCV Feedback Section
+            st.subheader("💬 Customer Voice & Feedback")
+            customer_ocv = ocv_df[ocv_df['TenantID'] == tenant_id]
+            
+            if not customer_ocv.empty:
+                # Sentiment Analysis
+                sentiment_col1, sentiment_col2, sentiment_col3 = st.columns(3)
+                
+                sentiment_counts = customer_ocv['Outcome'].value_counts()
+                with sentiment_col1:
+                    positive = sentiment_counts.get('Positive', 0)
+                    st.metric("Positive Feedback", positive, 
+                             help="Number of positive feedback entries")
+                with sentiment_col2:
+                    neutral = sentiment_counts.get('Neutral', 0) 
+                    st.metric("Neutral Feedback", neutral,
+                             help="Number of neutral feedback entries")
+                with sentiment_col3:
+                    negative = sentiment_counts.get('Negative', 0)
+                    st.metric("Negative Feedback", negative,
+                             help="Number of negative feedback entries")
+                
+                # Recent Feedback
+                st.write("**Recent Feedback:**")
+                recent_feedback = customer_ocv.sort_values('Date', ascending=False)[
+                    ['Product', 'MetricName', 'MetricValue', 'Outcome', 'Date', 'Comment']
+                ].head(5)
+                st.dataframe(recent_feedback, use_container_width=True, hide_index=True)
+                
+                # Actionable Insights
+                st.subheader("💡 Actionable Insights")
+                insights = []
+                
+                # Check for unresolved complaints
+                if urgent_issues > 0:
+                    insights.append(f"🚨 **{urgent_issues} urgent issues** require immediate attention")
+                
+                # Check for positive wins
+                if positive > negative:
+                    insights.append(f"✅ **Strong customer satisfaction** with {positive} positive vs {negative} negative feedback")
+                
+                # Check for escalation needs
+                if sla_breaches > 0:
+                    insights.append(f"⚠️ **{sla_breaches} SLA breaches** - escalation recommended")
+                
+                # Usage insights
+                if 'M365_MAU' in customer_data and customer_data['M365_MAU'] < customer_data['Licenses'] * 0.7:
+                    usage_rate = (customer_data['M365_MAU'] / customer_data['Licenses']) * 100
+                    insights.append(f"📈 **Low usage rate** ({usage_rate:.1f}%) - opportunity for adoption programs")
+                
+                if insights:
+                    for insight in insights:
+                        st.write(insight)
+                else:
+                    st.write("✅ No immediate action items identified")
+                    
+            else:
+                st.info("No customer feedback data available for this customer.")
+    
+    with tab2:
+        st.header("Product Manager Overview Dashboard")
+        st.caption("Product-focused insights and customer analytics")
+        
+        # Product selection
+        all_products = set()
+        for products_str in customers_df['ProductsInUse'].dropna():
+            all_products.update([p.strip() for p in products_str.split(',')])
+        all_products = sorted(list(all_products))
+        
+        selected_product = st.selectbox("Select Product", options=all_products)
+        
+        if selected_product:
+            # Filter data for selected product
+            product_customers = customers_df[customers_df['ProductsInUse'].str.contains(selected_product, na=False)]
+            product_icms = icms_df[icms_df['Product'] == selected_product]
+            product_ocv = ocv_df[ocv_df['Product'] == selected_product]
+            
+            # KPI Cards
+            st.subheader(f"📊 {selected_product} - Key Metrics")
+            
+            kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
+            with kpi_col1:
+                total_customers = len(product_customers)
+                st.metric("Total Customers", total_customers)
+            with kpi_col2:
+                if len(product_icms) > 0 and total_customers > 0:
+                    complaint_rate = (len(product_icms) / total_customers) * 100
+                    st.metric("Complaint Rate", f"{complaint_rate:.1f}%")
+                else:
+                    st.metric("Complaint Rate", "0%")
+            with kpi_col3:
+                if 'M365_MAU' in product_customers.columns:
+                    avg_mau = product_customers['M365_MAU'].mean()
+                    st.metric("Average MAU", f"{avg_mau:,.0f}")
+                else:
+                    st.metric("Average MAU", "N/A")
+            with kpi_col4:
+                if len(product_icms) > 0:
+                    resolution_rate = (len(product_icms[product_icms['Status'].isin(['Resolved', 'Closed'])]) / len(product_icms)) * 100
+                    st.metric("Resolution Rate", f"{resolution_rate:.1f}%")
+                else:
+                    st.metric("Resolution Rate", "100%")
+            
+            # Customer Breakdown
+            st.subheader("👥 Customer Breakdown")
+            
+            breakdown_col1, breakdown_col2 = st.columns(2)
+            
+            with breakdown_col1:
+                st.write("**By Segment:**")
+                segment_breakdown = product_customers['SalesSegment'].value_counts()
+                if not segment_breakdown.empty:
+                    segment_df = pd.DataFrame({
+                        'Segment': segment_breakdown.index,
+                        'Customers': segment_breakdown.values
+                    })
+                    st.bar_chart(segment_df.set_index('Segment'))
+                    
+                    # Show numbers
+                    for segment, count in segment_breakdown.items():
+                        percentage = (count / total_customers) * 100
+                        st.write(f"• **{segment}**: {count} customers ({percentage:.1f}%)")
+                else:
+                    st.write("No customer data available")
+            
+            with breakdown_col2:
+                st.write("**By Region:**")
+                if 'Region' in product_customers.columns:
+                    region_breakdown = product_customers['Region'].value_counts()
+                    if not region_breakdown.empty:
+                        region_df = pd.DataFrame({
+                            'Region': region_breakdown.index,
+                            'Customers': region_breakdown.values
+                        })
+                        st.bar_chart(region_df.set_index('Region'))
+                        
+                        # Show numbers
+                        for region, count in region_breakdown.items():
+                            percentage = (count / total_customers) * 100
+                            st.write(f"• **{region}**: {count} customers ({percentage:.1f}%)")
+                    else:
+                        st.write("No region data available")
+                else:
+                    st.write("Region data not available")
+            
+            # Top Emerging Issues
+            st.subheader("🚨 Top Emerging Issues")
+            
+            if not product_icms.empty:
+                # Group by severity and count
+                severity_issues = product_icms.groupby(['Severity', 'Status']).size().reset_index(name='Count')
+                
+                issues_col1, issues_col2 = st.columns(2)
+                
+                with issues_col1:
+                    st.write("**By Severity:**")
+                    severity_counts = product_icms['Severity'].value_counts()
+                    for severity, count in severity_counts.items():
+                        severity_color = {"Critical": "🔴", "High": "🟠", "Medium": "🟡", "Low": "🟢"}
+                        st.write(f"{severity_color.get(severity, '⚪')} **{severity}**: {count} issues")
+                
+                with issues_col2:
+                    st.write("**Recent High-Priority Issues:**")
+                    recent_high_priority = product_icms[
+                        (product_icms['Severity'].isin(['Critical', 'High'])) |
+                        (product_icms['PriorityScore'] > 75)
+                    ].sort_values(['PriorityScore', 'CreatedAt'], ascending=[False, False]).head(5)
+                    
+                    if not recent_high_priority.empty:
+                        for _, issue in recent_high_priority.iterrows():
+                            customer_name = customers_df[customers_df['TenantID'] == issue['TenantID']]['TenantName'].iloc[0] if len(customers_df[customers_df['TenantID'] == issue['TenantID']]) > 0 else issue['TenantID']
+                            st.write(f"• **{customer_name}** - {issue['Severity']} (Priority: {issue['PriorityScore']})")
+                    else:
+                        st.write("No high-priority issues")
+            else:
+                st.info("No issues reported for this product")
+            
+            # OCV Feedback Analysis
+            st.subheader("💬 Customer Voice Analysis")
+            
+            if not product_ocv.empty:
+                feedback_col1, feedback_col2 = st.columns(2)
+                
+                with feedback_col1:
+                    st.write("**Sentiment Distribution:**")
+                    sentiment_dist = product_ocv['Outcome'].value_counts()
+                    sentiment_df = pd.DataFrame({
+                        'Sentiment': sentiment_dist.index,
+                        'Count': sentiment_dist.values
+                    })
+                    st.bar_chart(sentiment_df.set_index('Sentiment'))
+                
+                with feedback_col2:
+                    st.write("**Recent Feedback Highlights:**")
+                    recent_feedback = product_ocv.sort_values('Date', ascending=False).head(5)
+                    for _, feedback in recent_feedback.iterrows():
+                        outcome_emoji = {"Positive": "😊", "Neutral": "😐", "Negative": "😞"}
+                        customer_name = customers_df[customers_df['TenantID'] == feedback['TenantID']]['TenantName'].iloc[0] if len(customers_df[customers_df['TenantID'] == feedback['TenantID']]) > 0 else feedback['TenantID'] 
+                        st.write(f"{outcome_emoji.get(feedback['Outcome'], '💬')} **{customer_name}**: {feedback['Comment'][:100]}...")
+            else:
+                st.info("No customer feedback available for this product")
+            
+            # Top Customers for this Product
+            st.subheader("🏆 Top Customers")
+            
+            if not product_customers.empty:
+                # Sort by licenses or MAU if available
+                if 'M365_MAU' in product_customers.columns:
+                    top_customers = product_customers.nlargest(10, 'M365_MAU')[
+                        ['TenantName', 'SalesSegment', 'Licenses', 'M365_MAU']
+                    ]
+                else:
+                    top_customers = product_customers.nlargest(10, 'Licenses')[
+                        ['TenantName', 'SalesSegment', 'Licenses']
+                    ]
+                
+                st.dataframe(top_customers, use_container_width=True, hide_index=True)
+            else:
+                st.info("No customers found for this product")
+                
     st.stop()
 else:
     st.stop()
